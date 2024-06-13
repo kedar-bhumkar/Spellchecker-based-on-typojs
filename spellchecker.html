@@ -59,8 +59,8 @@
 
   <script>
 
-
-    document.getElementById('textInput').addEventListener('input', function(event) {
+    const textDiv = document.getElementById('textInput')
+    textDiv.addEventListener('input', function(event) {
       const textBox = event.target;
       const text = textBox.innerText.split(/(\s+)/); // Split text by words and spaces
 
@@ -88,45 +88,10 @@
       }).join('');
 
       textBox.innerHTML = wordsHTML;
+      placeCaretAtEnd(textDiv);
 
-      // Restore cursor position
-      const newRange = document.createRange();
-      let charCount = 0;
-      let found = false;
 
-      textBox.childNodes.forEach(node => {
-        if (found) return;
-        if (node.nodeType === Node.TEXT_NODE) {
-          const textLength = node.textContent.length;
-          if (charCount + textLength >= cursorPosition) {
-            newRange.setStart(node, cursorPosition - charCount);
-            newRange.setEnd(node, cursorPosition - charCount);
-            found = true;
-          } else {
-            charCount += textLength;
-          }
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          const textLength = node.textContent.length;
-          if (charCount + textLength >= cursorPosition) {
-            node.childNodes.forEach(child => {
-              if (found) return;
-              const childLength = child.textContent.length;
-              if (charCount + childLength >= cursorPosition) {
-                newRange.setStart(child, cursorPosition - charCount);
-                newRange.setEnd(child, cursorPosition - charCount);
-                found = true;
-              } else {
-                charCount += childLength;
-              }
-            });
-          } else {
-            charCount += textLength;
-          }
-        }
-      });
-
-      selection.removeAllRanges();
-      selection.addRange(newRange);
+  
     });
 
     document.getElementById('textInput').addEventListener('mouseover', function(event) {
@@ -179,6 +144,25 @@
         tooltip.style.display = 'none';
       }
     });    
+
+
+
+    function placeCaretAtEnd(el) {
+      el.focus();
+      if (typeof window.getSelection != "undefined" && typeof document.createRange != "undefined") {
+          var range = document.createRange();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+      } else if (typeof document.body.createTextRange != "undefined") {
+          var textRange = document.body.createTextRange();
+          textRange.moveToElementText(el);
+          textRange.collapse(false);
+          textRange.select();
+      }
+  }    
   </script>
 
 
