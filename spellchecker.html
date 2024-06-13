@@ -58,15 +58,7 @@
 
 
   <script>
-    // Simulate fetching words from an API
-    async function fetchWords() {
-      // Simulating an API call with a promise
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve('suggestion1,suggestion2,suggestion3');
-        }, 500);
-      });
-    }
+
 
     document.getElementById('textInput').addEventListener('input', function(event) {
       const textBox = event.target;
