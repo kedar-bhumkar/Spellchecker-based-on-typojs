@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-Correct Text Box</title>
+  <style>
+    .text-box {
+      width: 100%;
+      min-height: 100px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-size: 16px;
+      outline: none;
+      white-space: pre-wrap;
+    }
+    .underline-red {
+      border-bottom: 2px solid red;
+      position: relative;
+    }
+    .tooltip {
+      display: none;
+      position: absolute;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
+      z-index: 10;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+    .tooltip div {
+      padding: 2px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <form>
+    <label for="textInput">Enter your text:</label>
+    <div id="textInput" class="text-box" contenteditable="true"></div>
+  </form>
+  <div id="tooltip" class="tooltip"></div>
+
+  
+  <script src="http://localhost:8000/typo.js"></script>
+  <script>  
+    var typo =new Typo("en_US", false, false, { dictionaryPath: "http://localhost:8000/dict" });    
+    
+    function isWordSpelledCorrectly(word){
+      return typo.check(word);
+    }
+
+    function offerSuggestions(word){
+      return typo.suggest(word)
+    }
+  </script>
+
+
+
+  <script>
+    // Simulate fetching words from an API
+    async function fetchWords() {
+      // Simulating an API call with a promise
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve('suggestion1,suggestion2,suggestion3');
+        }, 500);
+      });
+    }
+
+    document.getElementById('textInput').addEventListener('input', function(event) {
+      const textBox = event.target;
+      const text = textBox.innerText.split(/(\s+)/); // Split text by words and spaces
+
+      // Save cursor position
+      const selection = window.getSelection();
+      const range = selection.getRangeAt(0);
+      const cursorPosition = range.startOffset;
+
+      const wordsHTML = text.map(word => {
+        // Preserve spaces as plain text
+        if (word.trim().length === 0) {
+          return word;
+        }
+        // Wrap words in span and underline if necessary
+        const span = document.createElement('span');
+        span.innerText = word;
+        if (word.length > 3) {
+            var isWordCorrect = isWordSpelledCorrectly(word)
+          console.log('isWordCorrect = '+ isWordCorrect)
+          if(!isWordCorrect){
+            span.classList.add('underline-red');            
+          }
+        }
+        return span.outerHTML;
+      }).join('');
+
+      textBox.innerHTML = wordsHTML;
+
+      // Restore cursor position
+      const newRange = document.createRange();
+      let charCount = 0;
+      let found = false;
+
+      textBox.childNodes.forEach(node => {
+        if (found) return;
+        if (node.nodeType === Node.TEXT_NODE) {
+          const textLength = node.textContent.length;
+          if (charCount + textLength >= cursorPosition) {
+            newRange.setStart(node, cursorPosition - charCount);
+            newRange.setEnd(node, cursorPosition - charCount);
+            found = true;
+          } else {
+            charCount += textLength;
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const textLength = node.textContent.length;
+          if (charCount + textLength >= cursorPosition) {
+            node.childNodes.forEach(child => {
+              if (found) return;
+              const childLength = child.textContent.length;
+              if (charCount + childLength >= cursorPosition) {
+                newRange.setStart(child, cursorPosition - charCount);
+                newRange.setEnd(child, cursorPosition - charCount);
+                found = true;
+              } else {
+                charCount += childLength;
+              }
+            });
+          } else {
+            charCount += textLength;
+          }
+        }
+      });
+
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    });
+
+    document.getElementById('textInput').addEventListener('mouseover', function(event) {
+      if (event.target.classList.contains('underline-red')) {
+        showTooltip(event);
+      }
+    });
+
+    document.getElementById('textInput').addEventListener('mouseout', function(event) {
+      if (event.target.classList.contains('underline-red')) {
+        //hideTooltip(event);
+      }
+    });
+
+    function showTooltip(event) {
+      const tooltip = document.getElementById('tooltip');
+      const word = event.target.innerText;
+
+
+        var alternatives = offerSuggestions(event.target.innerText)
+        console.log('alternatives = ' + alternatives)
+        const suggestions = String(alternatives).split(',');
+        tooltip.innerHTML = ''; // Clear previous suggestions
+        suggestions.forEach(suggestion => {
+          const div = document.createElement('div');
+          div.innerText = suggestion;
+          div.addEventListener('click', () => {
+            event.target.innerText = suggestion; // Replace word
+            tooltip.style.display = 'none'; // Hide tooltip
+            event.target.classList.remove('underline-red')
+          });
+          tooltip.appendChild(div);
+        });
+        const rect = event.target.getBoundingClientRect();
+        tooltip.style.left = `${rect.left}px`;
+        tooltip.style.top = `${rect.bottom + window.scrollY}px`;
+        tooltip.style.display = 'block';
+
+    }
+
+    function hideTooltip() {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.style.display = 'none';
+    }
+
+
+    document.addEventListener('click', function(event) {
+      const tooltip = document.getElementById('tooltip');
+      if (!tooltip.contains(event.target) && !event.target.classList.contains('underline-red')) {
+        tooltip.style.display = 'none';
+      }
+    });    
+  </script>
+
+
+
+
+
+</body>
+</html>
