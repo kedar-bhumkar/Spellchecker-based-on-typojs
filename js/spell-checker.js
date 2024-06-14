@@ -8,8 +8,17 @@
   function offerSuggestions(word){
     return typo.suggest(word)
   }
+  document.addEventListener("DOMContentLoaded", function(event) {
+    /* 
+      - Code to execute when only the HTML document is loaded.
+      - This doesn't wait for stylesheets, 
+        images, and subframes to finish loading. 
+    */
 
+     init()   
+  });
   
+function init(){
   const textDivs = document.getElementsByClassName('spell-check')  
   Array.from(textDivs).forEach(textDiv=> {
     textDiv.addEventListener('input', function(event) {
@@ -64,6 +73,9 @@
         }
     })
     });
+}
+
+  
 
   function showTooltip(event) {
     const tooltip = document.getElementById('tooltip');
